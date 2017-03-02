@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/cmu440/p0"
+	// "time"
 )
 
 const defaultPort = 9999
@@ -21,8 +22,9 @@ func main() {
 		return
 	}
 
-	fmt.Printf("Started MultiEchoServer on port %d...\n", defaultPort)
+	// time.Sleep(10 * time.Second)
+	// server.Close()
 
 	// Block forever.
-	select {}
+	// select {}
 }

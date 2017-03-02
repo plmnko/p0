@@ -77,8 +77,9 @@ func (ts *testSystem) startServer(numTries int) error {
 		if err := ts.server.Start(port); err == nil {
 			ts.hostport = net.JoinHostPort("localhost", strconv.Itoa(port))
 			return nil
+		} else {
+			fmt.Printf("Warning! Failed to start server on port %d: %s.\n", port, err)
 		}
-		fmt.Printf("Warning! Failed to start server on port %d: %s.\n", port, err)
 		time.Sleep(time.Duration(50) * time.Millisecond)
 
 	}
@@ -262,6 +263,7 @@ func (ts *testSystem) runTest(numMsgs, timeout int, normalClients, slowClients [
 				}
 				return nil
 			}
+			fmt.Printf("normalReads/totalReads %d/%d\n", normalReads, totalReads)
 			// Otherwise, if there are no slow clients, then no messages
 			// should be dropped and the test should NOT timeout.
 			return errors.New("test timed out")
