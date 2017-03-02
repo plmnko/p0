@@ -1,0 +1,63 @@
+Really depends on a machine's performance? 
+
+First, Start cannot be block, so have to spawn a goroutine to handle accept
+
+Previously, send was centeralized. Only 1 buffer at server side of length 100 was 
+
+set. Send traverse all connected clients, then sequentially send one by one. 
+All basic tests passed, except the slow clients. Since slow reads from client, it 
+
+blocked at write at server, buffer was full, so client write also blocked. The 
+
+timeout cannot be triggered because of the client write blocked. 
+
+Thought about setting deadline at the connection. Did not help. 
+Changed the sequential send to parallel send. It worked, but no msg lost at any 
+
+client. (The test expects slow client msg lost, but normal client msg not.)
+
+Read the requirement again. It seemed to imply to have each client an outgoing 
+
+buffer of length 100. 
+
+Now, each connection has a buffer of length 100. The server also has a msg buffer 
+
+of length 1. When each connection is accepted, a receive goroutine and a send 
+
+goroutine were spawned for that connection. The receive thread takes a msg and put 
+
+it into the server buffer. A buf monitor pulls that msg and dispatch to each client 
+
+buffer in a nonblocking style. (Use a select switch, if sent to that client buffer 
+
+channel failed, meaning the channel full, then go to default and skip this client.) 
+
+Send goroutine pulls msg from its 100-length connection buffer to send. 
+The problem in this method is, send goes too slow, and the buffer is easily full 
+
+when its size is only 100. Msg lost even for normal reads from basic test 4. When 
+
+the buffer size set to 1000, things are mitigated, and a better chance all tests 
+
+succeed. 
+
+Others:
+For Count(), to avoid data race, use a channel to send a count request to the count 
+
+monitor, then wait on that same channel. The count monitor can respond to that 
+
+channel with the current count. 
+For exit, to exit receive routine is not necessary since it blocks at incoming 
+
+data. But send data blocks at msg buffer, so it needs to exit. 
+
+
+Useful tools: RawCap + Wireshark. (Not necessary for this project.)
+RawCap to capture loopback at Windows and generate a pcap file. Wireshark used to 
+
+analyze the file. 
+In Linux, nc can be used to send/receive from a port. 
+
+Check port availability:
+windows: netstat -abno|grep <port>  (With cygwin/git bash)
+Linux: lsof -i:<port>
